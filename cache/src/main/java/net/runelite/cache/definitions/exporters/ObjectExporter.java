@@ -29,6 +29,11 @@ import com.google.gson.GsonBuilder;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import net.runelite.cache.definitions.ObjectDefinition;
 
 public class ObjectExporter
@@ -55,6 +60,40 @@ public class ObjectExporter
 		try (FileWriter fw = new FileWriter(file))
 		{
 			fw.write(export());
+		}
+	}
+
+	public String simbaExport()
+	{
+		JsonObject obj = new JsonObject();
+		obj.addProperty("name", object.getName());
+		obj.addProperty("id", object.getId());
+		obj.addProperty("objId", object.getObjectID());
+		obj.addProperty("category", object.getCategory());
+		obj.addProperty("ambient", object.getAmbient());
+		obj.addProperty("contrast", object.getContrast());
+		obj.addProperty("objTypes", Arrays.toString(object.getObjectTypes()));
+		obj.addProperty("models", Arrays.toString(object.getObjectModels()));
+		obj.addProperty("recolorsFind", Arrays.toString(object.getRecolorToFind()));
+		obj.addProperty("recolorsReplace", Arrays.toString(object.getRecolorToReplace()));
+
+		JsonArray actions = new JsonArray();
+
+		for (int i = 0; i < object.getOps().getOps().size(); i++) {
+			if (object.getOps().getOps().get(i).text != null) actions.add(object.getOps().getOps().get(i).text);
+		}
+
+		obj.add("actions", actions);
+
+		return obj.toString();
+	}
+
+
+	public void simbaExportTo(File file) throws IOException
+	{
+		try (FileWriter fw = new FileWriter(file))
+		{
+			fw.write(simbaExport());
 		}
 	}
 }

@@ -65,89 +65,78 @@ public class ModelDefinition
 
 		this.vertexNormals = new VertexNormal[this.vertexCount];
 
-		int var1;
-		for (var1 = 0; var1 < this.vertexCount; ++var1)
+		int i;
+		for (i = 0; i < this.vertexCount; ++i)
 		{
-			this.vertexNormals[var1] = new VertexNormal();
+			this.vertexNormals[i] = new VertexNormal();
 		}
 
-		for (var1 = 0; var1 < this.faceCount; ++var1)
+		for (i = 0; i < this.faceCount; ++i)
 		{
-			int vertexA = this.faceIndices1[var1];
-			int vertexB = this.faceIndices2[var1];
-			int vertexC = this.faceIndices3[var1];
+			int vertexA = this.faceIndices1[i];
+			int vertexB = this.faceIndices2[i];
+			int vertexC = this.faceIndices3[i];
 
-			int xA = this.vertexX[vertexB] - this.vertexX[vertexA];
-			int yA = this.vertexY[vertexB] - this.vertexY[vertexA];
-			int zA = this.vertexZ[vertexB] - this.vertexZ[vertexA];
+			int dxAB = this.vertexX[vertexB] - this.vertexX[vertexA];
+			int dyAB = this.vertexY[vertexB] - this.vertexY[vertexA];
+			int dzAB = this.vertexZ[vertexB] - this.vertexZ[vertexA];
 
-			int xB = this.vertexX[vertexC] - this.vertexX[vertexA];
-			int yB = this.vertexY[vertexC] - this.vertexY[vertexA];
-			int zB = this.vertexZ[vertexC] - this.vertexZ[vertexA];
+			int dxAC = this.vertexX[vertexC] - this.vertexX[vertexA];
+			int dyAC = this.vertexY[vertexC] - this.vertexY[vertexA];
+			int dzAC = this.vertexZ[vertexC] - this.vertexZ[vertexA];
 
 			// Compute cross product
-			int var11 = yA * zB - yB * zA;
-			int var12 = zA * xB - zB * xA;
-			int var13 = xA * yB - xB * yA;
+			int nx = dyAB * dzAC - dzAB * dyAC;
+			int ny = dzAB * dxAC - dxAB * dzAC;
+			int nz = dxAB * dyAC - dxAC * dyAB;;
 
-			while (var11 > 8192 || var12 > 8192 || var13 > 8192 || var11 < -8192 || var12 < -8192 || var13 < -8192)
+			while (nx > 8192 || ny > 8192 || nz > 8192 || nx < -8192 || ny < -8192 || nz < -8192)
 			{
-				var11 >>= 1;
-				var12 >>= 1;
-				var13 >>= 1;
+				nx >>= 1;
+				ny >>= 1;
+				nz >>= 1;
 			}
 
-			int length = (int) Math.sqrt((double) (var11 * var11 + var12 * var12 + var13 * var13));
-			if (length <= 0)
-			{
+			int length = (int) Math.sqrt(nz * nz + nx * nx + ny * ny);
+			if (length <= 0) {
 				length = 1;
 			}
 
-			var11 = var11 * 256 / length;
-			var12 = var12 * 256 / length;
-			var13 = var13 * 256 / length;
+			nx = nx * 256 / length;
+			ny = ny * 256 / length;
+			nz = nz * 256 / length;
 
-			byte var15;
 			if (this.faceRenderTypes == null)
 			{
-				var15 = 0;
+				VertexNormal n = this.vertexNormals[vertexA];
+				n.x += nx;
+				n.y += ny;
+				n.z += nz;
+				++n.magnitude;
+
+				n = this.vertexNormals[vertexB];
+				n.x += nx;
+				n.y += ny;
+				n.z += nz;
+				++n.magnitude;
+
+				n = this.vertexNormals[vertexC];
+				n.x += nx;
+				n.y += ny;
+				n.z += nz;
+				++n.magnitude;
 			}
 			else
-			{
-				var15 = this.faceRenderTypes[var1];
-			}
-
-			if (var15 == 0)
-			{
-				VertexNormal var16 = this.vertexNormals[vertexA];
-				var16.x += var11;
-				var16.y += var12;
-				var16.z += var13;
-				++var16.magnitude;
-
-				var16 = this.vertexNormals[vertexB];
-				var16.x += var11;
-				var16.y += var12;
-				var16.z += var13;
-				++var16.magnitude;
-
-				var16 = this.vertexNormals[vertexC];
-				var16.x += var11;
-				var16.y += var12;
-				var16.z += var13;
-				++var16.magnitude;
-			}
-			else if (var15 == 1)
 			{
 				if (this.faceNormals == null)
 				{
 					this.faceNormals = new FaceNormal[this.faceCount];
 				}
 
-				FaceNormal var17 = this.faceNormals[var1] = new FaceNormal();
-				var17.x = var11;
-				var17.y = var12;
-				var17.z = var13;
+				FaceNormal n = this.faceNormals[i] = new FaceNormal();
+				n.x = nx;
+				n.y = ny;
+				n.z = nz;
 			}
 		}
 	}

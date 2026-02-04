@@ -400,10 +400,6 @@ public class NpcLoader
 		{
 			def.unknown1 = true;
 		}
-		else if (opcode == 130)
-		{
-			def.idleAnimRestart = true;
-		}
 		else if (opcode == 145)
 		{
 			def.canHideForOverlap = true;
@@ -411,10 +407,6 @@ public class NpcLoader
 		else if (opcode == 146)
 		{
 			def.overlapTintHSL = stream.readUnsignedShort();
-		}
-		else if (opcode == 147)
-		{
-			def.zbuf = false;
 		}
 		else if (opcode == 249)
 		{

@@ -25,13 +25,16 @@
 package net.runelite.cache.models;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+
 import net.runelite.cache.TextureManager;
 import net.runelite.cache.definitions.ModelDefinition;
 import net.runelite.cache.definitions.TextureDefinition;
 
 public class ObjExporter
 {
-	private static final double BRIGHTNESS = JagexColor.BRIGHTNESS_MIN;
+	private static final double BRIGHTNESS = JagexColor.BRIGHTNESS_MAX;
 
 	private final TextureManager textureManager;
 	private final ModelDefinition model;
@@ -49,13 +52,11 @@ public class ObjExporter
 
 		objWriter.println("mtllib " + model.id + ".mtl");
 
-		objWriter.println("o runescapemodel");
-
 		for (int i = 0; i < model.vertexCount; ++i)
 		{
 			objWriter.println("v " + model.vertexX[i] + " "
-				+ model.vertexY[i] * -1 + " "
-				+ model.vertexZ[i] * -1);
+					+ model.vertexY[i] * -1 + " "
+					+ model.vertexZ[i] * -1);
 		}
 
 		if (model.faceTextures != null)
@@ -63,12 +64,18 @@ public class ObjExporter
 			float[][] u = model.faceTextureUCoordinates;
 			float[][] v = model.faceTextureVCoordinates;
 
-			for (int i = 0; i < model.faceCount; ++i)
-			{
-				objWriter.println("vt " + u[i][0] + " " + v[i][0]);
-				objWriter.println("vt " + u[i][1] + " " + v[i][1]);
-				objWriter.println("vt " + u[i][2] + " " + v[i][2]);
+			if (u != null && v != null) {
+				for (int i = 0; i < model.faceCount; ++i)
+				{
+					if (i > u.length-1 || i > v.length-1) break;
+					if (u[i] == null || v[i] == null) continue;
+					if (2 > u[i].length-1 || 2 > v[i].length-1) continue;
+					objWriter.println("vt " + u[i][0] + " " + v[i][0]);
+					objWriter.println("vt " + u[i][1] + " " + v[i][1]);
+					objWriter.println("vt " + u[i][2] + " " + v[i][2]);
+				}
 			}
+
 		}
 
 		for (VertexNormal normal : model.vertexNormals)
@@ -86,9 +93,9 @@ public class ObjExporter
 			if (model.faceTextures != null)
 			{
 				objWriter.println("f "
-					+ x + "/" + (i * 3 + 1) + " "
-					+ y + "/" + (i * 3 + 2) + " "
-					+ z + "/" + (i * 3 + 3));
+						+ x + "/" + (i * 3 + 1) + " "
+						+ y + "/" + (i * 3 + 2) + " "
+						+ z + "/" + (i * 3 + 3));
 
 			}
 			else
@@ -112,7 +119,7 @@ public class ObjExporter
 
 			if (textureId == -1)
 			{
-				int rgb = JagexColor.HSLtoRGB( model.faceColors[i], BRIGHTNESS);
+				int rgb = JagexColor.HSLtoRGB(model.faceColors[i], BRIGHTNESS);
 				double r = ((rgb >> 16) & 0xff) / 255.0;
 				double g = ((rgb >> 8) & 0xff) / 255.0;
 				double b = (rgb & 0xff) / 255.0;
@@ -139,5 +146,48 @@ public class ObjExporter
 				mtlWriter.println("d " + (alpha / 255.0));
 			}
 		}
+	}
+
+	public int getSimbaHeight()
+	{
+		int hi = 0;
+		int lo = 0xffffffff;
+		for (int i = 0; i < model.getVertexY().length; i++) {
+			int current = model.getVertexY()[i] * -1;
+			if (current > hi) hi = current;
+			if (current < lo) lo = current;
+		}
+		return hi-lo;
+	}
+
+	public List<Integer> getSimbaColors(){
+		List<Integer> colors = new ArrayList<>();
+		List<Integer> knownTextures = new ArrayList<>();
+		List<Short> knownHSL = new ArrayList<>();
+		for (int i = 0; i < model.getFaceCount(); ++i)
+		{
+			// determine face color (textured or colored?)
+			int textureId = -1;
+			if (model.getFaceTextures() != null) textureId = model.getFaceTextures()[i];
+
+			int rgbColor;
+			if (textureId != -1)
+			{
+				if (knownTextures.contains(textureId)) continue;
+				TextureDefinition texture = textureManager.findTexture((textureId));
+				rgbColor = JagexColor.adjustForBrightness(texture.getAverageRGB(), JagexColor.BRIGHTNESS_MAX);
+				knownTextures.add(textureId);
+			}
+			else
+			{
+				if (knownHSL.contains(model.faceColors[i])) continue;
+				rgbColor = JagexColor.HSLtoRGB(model.faceColors[i], JagexColor.BRIGHTNESS_MAX);
+				knownHSL.add(model.faceColors[i]);
+			}
+
+			int bgr = JagexColor.RGBtoBGR(rgbColor);
+			if (!colors.contains(bgr)) colors.add(bgr);
+		}
+		return colors;
 	}
 }

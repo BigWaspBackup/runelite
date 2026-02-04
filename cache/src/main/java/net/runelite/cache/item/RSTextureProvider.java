@@ -27,6 +27,7 @@ package net.runelite.cache.item;
 import net.runelite.cache.definitions.TextureDefinition;
 import net.runelite.cache.definitions.providers.SpriteProvider;
 import net.runelite.cache.definitions.providers.TextureProvider;
+import net.runelite.cache.models.JagexColor;
 
 public class RSTextureProvider
 {
@@ -40,12 +41,9 @@ public class RSTextureProvider
 	public RSTextureProvider(TextureProvider textureProvider, SpriteProvider spriteProvider)
 	{
 		this.spriteProvider = spriteProvider;
-		this.size = 0;
-		this.brightness = 1.0D;
-		this.width = 128;
 		this.maxSize = 20;
 		this.size = this.maxSize;
-		this.brightness = 0.8D;
+		this.brightness = 1.0D;
 		this.width = 128;
 
 		int max = -1;
@@ -76,7 +74,7 @@ public class RSTextureProvider
 					return var2.pixels;
 				}
 
-				var2.method2680(this.brightness, this.width, spriteProvider);
+				var2.load(this.brightness, this.width, spriteProvider);
 				return var2.pixels;
 			}
 		}
@@ -87,7 +85,7 @@ public class RSTextureProvider
 
 	public int getAverageTextureRGB(int var1)
 	{
-		return this.textures[var1] != null ? this.textures[var1].missingColor : 0;
+		return this.textures[var1] != null ? this.textures[var1].averageRGB : 0;
 	}
 
 
@@ -97,7 +95,7 @@ public class RSTextureProvider
 	}
 
 
-	public boolean vmethod3066(int var1)
+	public boolean isLowDetail(int var1)
 	{
 		return this.width == 64;
 	}

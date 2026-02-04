@@ -28,20 +28,6 @@ import net.runelite.cache.models.JagexColor;
 
 class Graphics3D extends Rasterizer2D
 {
-	private static final double UNIT = Math.PI / 1024d; // How much of the circle each unit of SINE/COSINE is
-
-	public static final int[] SINE = new int[2048]; // sine angles for each of the 2048 units, * 65536 and stored as an int
-	public static final int[] COSINE = new int[2048]; // cosine
-
-	static
-	{
-		for (int i = 0; i < 2048; ++i)
-		{
-			SINE[i] = (int) (65536.0D * Math.sin((double) i * UNIT));
-			COSINE[i] = (int) (65536.0D * Math.cos((double) i * UNIT));
-		}
-	}
-
 	private final RSTextureProvider textureProvider;
 	boolean rasterClipEnable;
 	boolean field1909;
@@ -70,10 +56,10 @@ class Graphics3D extends Rasterizer2D
 		setRasterClipping(draw_region_x, drawingAreaTop, drawingAreaRight, drawingAreaBottom);
 	}
 
-	final void setRasterClipping(int var0, int var1, int var2, int var3)
+	final void setRasterClipping(int x1, int y1, int x2, int y2)
 	{
-		rasterClipX = var2 - var0;
-		Rasterizer3D_clipHeight = var3 - var1;
+		rasterClipX = x2 - x1;
+		Rasterizer3D_clipHeight = y2 - y1;
 		Rasterizer3D_method3();
 
 		if (rasterClipY.length < Rasterizer3D_clipHeight)
@@ -88,11 +74,11 @@ class Graphics3D extends Rasterizer2D
 			rasterClipY = new int[v + 1];
 		}
 
-		int var4 = var0 + graphicsPixelsWidth * var1;
+		int area = x1 + graphicsPixelsWidth * y1;
 		for (int i = 0; i < Rasterizer3D_clipHeight; ++i)
 		{
-			rasterClipY[i] = var4;
-			var4 += graphicsPixelsWidth;
+			rasterClipY[i] = area;
+			area += graphicsPixelsWidth;
 		}
 
 	}
@@ -125,7 +111,7 @@ class Graphics3D extends Rasterizer2D
 		colorPalette = JagexColor.createPalette(brightness);
 	}
 
-	final void rasterGouraud(int var0, int var1, int var2, int var3, int var4, int var5, int var6, int var7, int var8)
+	final void gouraudTriangle(int var0, int var1, int var2, int var3, int var4, int var5, int var6, int var7, int var8)
 	{
 		int var9 = var4 - var3;
 		int var10 = var1 - var0;
@@ -220,7 +206,7 @@ class Graphics3D extends Rasterizer2D
 											return;
 										}
 
-										method2778(graphicsPixels, var0, 0, 0, var5 >> 14, var4 >> 14, var6, var19);
+										gouraudRaster(graphicsPixels, var0, 0, 0, var5 >> 14, var4 >> 14, var6, var19);
 										var5 += var17;
 										var4 += var15;
 										var6 += var20;
@@ -228,7 +214,7 @@ class Graphics3D extends Rasterizer2D
 									}
 								}
 
-								method2778(graphicsPixels, var0, 0, 0, var5 >> 14, var3 >> 14, var6, var19);
+								gouraudRaster(graphicsPixels, var0, 0, 0, var5 >> 14, var3 >> 14, var6, var19);
 								var5 += var17;
 								var3 += var16;
 								var6 += var20;
@@ -254,7 +240,7 @@ class Graphics3D extends Rasterizer2D
 											return;
 										}
 
-										method2778(graphicsPixels, var0, 0, 0, var4 >> 14, var5 >> 14, var6, var19);
+										gouraudRaster(graphicsPixels, var0, 0, 0, var4 >> 14, var5 >> 14, var6, var19);
 										var5 += var17;
 										var4 += var15;
 										var6 += var20;
@@ -262,7 +248,7 @@ class Graphics3D extends Rasterizer2D
 									}
 								}
 
-								method2778(graphicsPixels, var0, 0, 0, var3 >> 14, var5 >> 14, var6, var19);
+								gouraudRaster(graphicsPixels, var0, 0, 0, var3 >> 14, var5 >> 14, var6, var19);
 								var5 += var17;
 								var3 += var16;
 								var6 += var20;
@@ -307,7 +293,7 @@ class Graphics3D extends Rasterizer2D
 											return;
 										}
 
-										method2778(graphicsPixels, var0, 0, 0, var5 >> 14, var3 >> 14, var6, var19);
+										gouraudRaster(graphicsPixels, var0, 0, 0, var5 >> 14, var3 >> 14, var6, var19);
 										var5 += var15;
 										var3 += var16;
 										var6 += var20;
@@ -315,7 +301,7 @@ class Graphics3D extends Rasterizer2D
 									}
 								}
 
-								method2778(graphicsPixels, var0, 0, 0, var4 >> 14, var3 >> 14, var6, var19);
+								gouraudRaster(graphicsPixels, var0, 0, 0, var4 >> 14, var3 >> 14, var6, var19);
 								var4 += var17;
 								var3 += var16;
 								var6 += var20;
@@ -341,7 +327,7 @@ class Graphics3D extends Rasterizer2D
 											return;
 										}
 
-										method2778(graphicsPixels, var0, 0, 0, var3 >> 14, var5 >> 14, var6, var19);
+										gouraudRaster(graphicsPixels, var0, 0, 0, var3 >> 14, var5 >> 14, var6, var19);
 										var5 += var15;
 										var3 += var16;
 										var6 += var20;
@@ -349,7 +335,7 @@ class Graphics3D extends Rasterizer2D
 									}
 								}
 
-								method2778(graphicsPixels, var0, 0, 0, var3 >> 14, var4 >> 14, var6, var19);
+								gouraudRaster(graphicsPixels, var0, 0, 0, var3 >> 14, var4 >> 14, var6, var19);
 								var4 += var17;
 								var3 += var16;
 								var6 += var20;
@@ -411,7 +397,7 @@ class Graphics3D extends Rasterizer2D
 											return;
 										}
 
-										method2778(graphicsPixels, var1, 0, 0, var3 >> 14, var5 >> 14, var7, var19);
+										gouraudRaster(graphicsPixels, var1, 0, 0, var3 >> 14, var5 >> 14, var7, var19);
 										var3 += var16;
 										var5 += var17;
 										var7 += var20;
@@ -419,7 +405,7 @@ class Graphics3D extends Rasterizer2D
 									}
 								}
 
-								method2778(graphicsPixels, var1, 0, 0, var3 >> 14, var4 >> 14, var7, var19);
+								gouraudRaster(graphicsPixels, var1, 0, 0, var3 >> 14, var4 >> 14, var7, var19);
 								var3 += var16;
 								var4 += var15;
 								var7 += var20;
@@ -445,7 +431,7 @@ class Graphics3D extends Rasterizer2D
 											return;
 										}
 
-										method2778(graphicsPixels, var1, 0, 0, var5 >> 14, var3 >> 14, var7, var19);
+										gouraudRaster(graphicsPixels, var1, 0, 0, var5 >> 14, var3 >> 14, var7, var19);
 										var3 += var16;
 										var5 += var17;
 										var7 += var20;
@@ -453,7 +439,7 @@ class Graphics3D extends Rasterizer2D
 									}
 								}
 
-								method2778(graphicsPixels, var1, 0, 0, var4 >> 14, var3 >> 14, var7, var19);
+								gouraudRaster(graphicsPixels, var1, 0, 0, var4 >> 14, var3 >> 14, var7, var19);
 								var3 += var16;
 								var4 += var15;
 								var7 += var20;
@@ -498,7 +484,7 @@ class Graphics3D extends Rasterizer2D
 											return;
 										}
 
-										method2778(graphicsPixels, var1, 0, 0, var3 >> 14, var4 >> 14, var7, var19);
+										gouraudRaster(graphicsPixels, var1, 0, 0, var3 >> 14, var4 >> 14, var7, var19);
 										var3 += var17;
 										var4 += var15;
 										var7 += var20;
@@ -506,7 +492,7 @@ class Graphics3D extends Rasterizer2D
 									}
 								}
 
-								method2778(graphicsPixels, var1, 0, 0, var5 >> 14, var4 >> 14, var7, var19);
+								gouraudRaster(graphicsPixels, var1, 0, 0, var5 >> 14, var4 >> 14, var7, var19);
 								var5 += var16;
 								var4 += var15;
 								var7 += var20;
@@ -532,7 +518,7 @@ class Graphics3D extends Rasterizer2D
 											return;
 										}
 
-										method2778(graphicsPixels, var1, 0, 0, var4 >> 14, var3 >> 14, var7, var19);
+										gouraudRaster(graphicsPixels, var1, 0, 0, var4 >> 14, var3 >> 14, var7, var19);
 										var3 += var17;
 										var4 += var15;
 										var7 += var20;
@@ -540,7 +526,7 @@ class Graphics3D extends Rasterizer2D
 									}
 								}
 
-								method2778(graphicsPixels, var1, 0, 0, var4 >> 14, var5 >> 14, var7, var19);
+								gouraudRaster(graphicsPixels, var1, 0, 0, var4 >> 14, var5 >> 14, var7, var19);
 								var5 += var16;
 								var4 += var15;
 								var7 += var20;
@@ -600,7 +586,7 @@ class Graphics3D extends Rasterizer2D
 										return;
 									}
 
-									method2778(graphicsPixels, var2, 0, 0, var4 >> 14, var3 >> 14, var8, var19);
+									gouraudRaster(graphicsPixels, var2, 0, 0, var4 >> 14, var3 >> 14, var8, var19);
 									var4 += var15;
 									var3 += var16;
 									var8 += var20;
@@ -608,7 +594,7 @@ class Graphics3D extends Rasterizer2D
 								}
 							}
 
-							method2778(graphicsPixels, var2, 0, 0, var4 >> 14, var5 >> 14, var8, var19);
+							gouraudRaster(graphicsPixels, var2, 0, 0, var4 >> 14, var5 >> 14, var8, var19);
 							var4 += var15;
 							var5 += var17;
 							var8 += var20;
@@ -634,7 +620,7 @@ class Graphics3D extends Rasterizer2D
 										return;
 									}
 
-									method2778(graphicsPixels, var2, 0, 0, var3 >> 14, var4 >> 14, var8, var19);
+									gouraudRaster(graphicsPixels, var2, 0, 0, var3 >> 14, var4 >> 14, var8, var19);
 									var4 += var15;
 									var3 += var16;
 									var8 += var20;
@@ -642,7 +628,7 @@ class Graphics3D extends Rasterizer2D
 								}
 							}
 
-							method2778(graphicsPixels, var2, 0, 0, var5 >> 14, var4 >> 14, var8, var19);
+							gouraudRaster(graphicsPixels, var2, 0, 0, var5 >> 14, var4 >> 14, var8, var19);
 							var4 += var15;
 							var5 += var17;
 							var8 += var20;
@@ -687,7 +673,7 @@ class Graphics3D extends Rasterizer2D
 										return;
 									}
 
-									method2778(graphicsPixels, var2, 0, 0, var4 >> 14, var5 >> 14, var8, var19);
+									gouraudRaster(graphicsPixels, var2, 0, 0, var4 >> 14, var5 >> 14, var8, var19);
 									var4 += var16;
 									var5 += var17;
 									var8 += var20;
@@ -695,7 +681,7 @@ class Graphics3D extends Rasterizer2D
 								}
 							}
 
-							method2778(graphicsPixels, var2, 0, 0, var3 >> 14, var5 >> 14, var8, var19);
+							gouraudRaster(graphicsPixels, var2, 0, 0, var3 >> 14, var5 >> 14, var8, var19);
 							var3 += var15;
 							var5 += var17;
 							var8 += var20;
@@ -721,7 +707,7 @@ class Graphics3D extends Rasterizer2D
 										return;
 									}
 
-									method2778(graphicsPixels, var2, 0, 0, var5 >> 14, var4 >> 14, var8, var19);
+									gouraudRaster(graphicsPixels, var2, 0, 0, var5 >> 14, var4 >> 14, var8, var19);
 									var4 += var16;
 									var5 += var17;
 									var8 += var20;
@@ -729,7 +715,7 @@ class Graphics3D extends Rasterizer2D
 								}
 							}
 
-							method2778(graphicsPixels, var2, 0, 0, var5 >> 14, var3 >> 14, var8, var19);
+							gouraudRaster(graphicsPixels, var2, 0, 0, var5 >> 14, var3 >> 14, var8, var19);
 							var3 += var15;
 							var5 += var17;
 							var8 += var20;
@@ -742,7 +728,7 @@ class Graphics3D extends Rasterizer2D
 	}
 
 
-	final void method2778(int[] var0, int var1, int var2, int var3, int var4, int var5, int var6, int var7)
+	final void gouraudRaster(int[] var0, int var1, int var2, int var3, int var4, int var5, int var6, int var7)
 	{
 		if (rasterClipEnable)
 		{
@@ -757,112 +743,105 @@ class Graphics3D extends Rasterizer2D
 			}
 		}
 
-		if (var4 < var5)
-		{
-			var1 += var4;
-			var6 += var4 * var7;
-			int var8;
-			int var9;
-			int var10;
-			if (rasterGouraudLowRes)
+		if (var4 >= var5) {
+			return;
+		}
+
+		var1 += var4;
+		var6 += var4 * var7;
+		int var8;
+		int var9;
+		int var10;
+
+		if (!rasterGouraudLowRes) {
+			var3 = var5 - var4;
+			if (rasterAlpha == 0)
 			{
-				var3 = var5 - var4 >> 2;
-				var7 <<= 2;
-				if (rasterAlpha == 0)
+				do
 				{
-					if (var3 > 0)
-					{
-						do
-						{
-							var2 = colorPalette[var6 >> 8];
-							var6 += var7;
-							var0[var1++] = var2;
-							var0[var1++] = var2;
-							var0[var1++] = var2;
-							var0[var1++] = var2;
-							--var3;
-						} while (var3 > 0);
-					}
-
-					var3 = var5 - var4 & 3;
-					if (var3 > 0)
-					{
-						var2 = colorPalette[var6 >> 8];
-
-						do
-						{
-							var0[var1++] = var2;
-							--var3;
-						} while (var3 > 0);
-					}
-				}
-				else
-				{
-					var8 = rasterAlpha;
-					var9 = 256 - rasterAlpha;
-					if (var3 > 0)
-					{
-						do
-						{
-							var2 = colorPalette[var6 >> 8];
-							var6 += var7;
-							var2 = (var9 * (var2 & 65280) >> 8 & 65280) + (var9 * (var2 & 16711935) >> 8 & 16711935);
-							var10 = var0[var1];
-							var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
-							var10 = var0[var1];
-							var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
-							var10 = var0[var1];
-							var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
-							var10 = var0[var1];
-							var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
-							--var3;
-						} while (var3 > 0);
-					}
-
-					var3 = var5 - var4 & 3;
-					if (var3 > 0)
-					{
-						var2 = colorPalette[var6 >> 8];
-						var2 = (var9 * (var2 & 65280) >> 8 & 65280) + (var9 * (var2 & 16711935) >> 8 & 16711935);
-
-						do
-						{
-							var10 = var0[var1];
-							var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
-							--var3;
-						} while (var3 > 0);
-					}
-				}
-
+					var0[var1++] = colorPalette[var6 >> 8];
+					var6 += var7;
+					--var3;
+				} while (var3 > 0);
 			}
 			else
 			{
-				var3 = var5 - var4;
-				if (rasterAlpha == 0)
-				{
-					do
-					{
-						var0[var1++] = colorPalette[var6 >> 8];
-						var6 += var7;
-						--var3;
-					} while (var3 > 0);
-				}
-				else
-				{
-					var8 = rasterAlpha;
-					var9 = 256 - rasterAlpha;
+				var8 = rasterAlpha;
+				var9 = 256 - rasterAlpha;
 
-					do
-					{
-						var2 = colorPalette[var6 >> 8];
-						var6 += var7;
-						var2 = (var9 * (var2 & 65280) >> 8 & 65280) + (var9 * (var2 & 16711935) >> 8 & 16711935);
-						var10 = var0[var1];
-						var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
-						--var3;
-					} while (var3 > 0);
-				}
+				do
+				{
+					var2 = colorPalette[var6 >> 8];
+					var6 += var7;
+					var2 = (var9 * (var2 & 0xFF00) >> 8 & 0xFF00) + (var9 * (var2 & 0xFF00FF) >> 8 & 0xFF00FF);
+					var10 = var0[var1];
+					var0[var1++] = ((var10 & 0xFF00FF) * var8 >> 8 & 0xFF00FF) + var2 + (var8 * (var10 & 0xFF00) >> 8 & 0xFF00);
+					--var3;
+				} while (var3 > 0);
+			}
+			return;
+		}
 
+		var3 = var5 - var4 >> 2;
+		var7 <<= 2;
+		if (rasterAlpha == 0)
+		{
+			if (var3 > 0)
+			{
+				do
+				{
+					var2 = colorPalette[var6 >> 8];
+					var6 += var7;
+					var0[var1++] = var2;
+					var0[var1++] = var2;
+					var0[var1++] = var2;
+					var0[var1++] = var2;
+					--var3;
+				} while (var3 > 0);
+			}
+
+			var3 = var5 - var4 & 3;
+			if (var3 > 0)
+			{
+				var2 = colorPalette[var6 >> 8];
+
+				do
+				{
+					var0[var1++] = var2;
+					--var3;
+				} while (var3 > 0);
+			}
+		}
+		else {
+			var8 = rasterAlpha;
+			var9 = 256 - rasterAlpha;
+			if (var3 > 0) {
+				do {
+					var2 = colorPalette[var6 >> 8];
+					var6 += var7;
+					var2 = (var9 * (var2 & 65280) >> 8 & 65280) + (var9 * (var2 & 16711935) >> 8 & 16711935);
+					var10 = var0[var1];
+					var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
+					var10 = var0[var1];
+					var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
+					var10 = var0[var1];
+					var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
+					var10 = var0[var1];
+					var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
+					--var3;
+				} while (var3 > 0);
+			}
+
+			var3 = var5 - var4 & 3;
+			if (var3 > 0) {
+				var2 = colorPalette[var6 >> 8];
+				var2 = (var9 * (var2 & 65280) >> 8 & 65280) + (var9 * (var2 & 16711935) >> 8 & 16711935);
+
+				do {
+					var10 = var0[var1];
+					var0[var1++] = ((var10 & 16711935) * var8 >> 8 & 16711935) + var2 + (var8 * (var10 & 65280) >> 8 & 65280);
+					--var3;
+				} while (var3 > 0);
 			}
 		}
 	}
@@ -1552,11 +1531,11 @@ class Graphics3D extends Rasterizer2D
 		if (var19 == null)
 		{
 			var20 = textureProvider.getAverageTextureRGB(var18);
-			rasterGouraud(var0, var1, var2, var3, var4, var5, method2794(var20, var6), method2794(var20, var7), method2794(var20, var8));
+			gouraudTriangle(var0, var1, var2, var3, var4, var5, method2794(var20, var6), method2794(var20, var7), method2794(var20, var8));
 		}
 		else
 		{
-			lowMem = textureProvider.vmethod3066(var18);
+			lowMem = textureProvider.isLowDetail(var18);
 			field1909 = textureProvider.vmethod3057(var18);
 			var20 = var4 - var3;
 			int var21 = var1 - var0;

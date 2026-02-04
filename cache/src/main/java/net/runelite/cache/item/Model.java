@@ -24,6 +24,8 @@
  */
 package net.runelite.cache.item;
 
+import net.runelite.cache.models.CircularAngle;
+
 class Model extends Renderable
 {
 	boolean[] faceClipped = new boolean[6500];
@@ -33,8 +35,8 @@ class Model extends Renderable
 	int[] modelLocalX = new int[6500];
 	int[] modelLocalY = new int[6500];
 	int[] modelLocalZ = new int[6500];
-	int[] distanceFaceCount = new int[6000];
-	int[][] facesByDistance = new int[6000][512];
+	int[] distanceFaceCount = new int[1600];
+	int[][] facesByDistance = new int[1600][512];
 	int[] numOfPriority = new int[12];
 	int[][] orderedFaces = new int[12][2000];
 	int[] eq10 = new int[2000];
@@ -72,8 +74,8 @@ class Model extends Renderable
 
 	static
 	{
-		Model_sine = Graphics3D.SINE;
-		Model_cosine = Graphics3D.COSINE;
+		Model_sine = CircularAngle.SINE;
+		Model_cosine = CircularAngle.COSINE;
 	}
 
 	Model()
@@ -144,14 +146,23 @@ class Model extends Renderable
 				}
 			}
 
-			this.XYZMag = (int) (Math.sqrt((double) this.XYZMag) + 0.99D);
+			this.XYZMag = (int)(Math.sqrt((double)this.XYZMag) + 0.99D);
 			this.radius = this.XYZMag;
 			this.diameter = this.XYZMag + this.XYZMag;
 		}
 
-		// rotate + perspective transform
+		int centerX = graphics.centerX;
+		int centerY = graphics.centerY;
+		int sinR1 = Model_sine[yzRotation];
+		int cosR1 = Model_cosine[yzRotation];
+		int sinY = Model_sine[xzRotation];
+		int cosY = Model_cosine[xzRotation];
+		int sinZ = Model_sine[xyRotation];
+		int cosZ = Model_cosine[xyRotation];
 		int sinX = Model_sine[orientation];
 		int cosX = Model_cosine[orientation];
+
+
 		int zRelatedVariable = sinX * yOffset + cosX * zOffset >> 16;
 
 		for (int i = 0; i < this.verticesCount; ++i)
@@ -159,21 +170,17 @@ class Model extends Renderable
 			int x = this.verticesX[i];
 			int y = this.verticesY[i];
 			int z = this.verticesZ[i];
+
+			int tmp;
 			if (xyRotation != 0)
 			{
-				int sinZ = Model_sine[xyRotation];
-				int cosZ = Model_cosine[xyRotation];
-				int tmp;
-				tmp = y * sinZ + x * cosZ >> 16;
+				tmp  = y * sinZ + x * cosZ >> 16;
 				y = y * cosZ - x * sinZ >> 16;
 				x = tmp;
 			}
 
 			if (yzRotation != 0)
 			{
-				int sinR1 = Model_sine[yzRotation];
-				int cosR1 = Model_cosine[yzRotation];
-				int tmp;
 				tmp = y * cosR1 - z * sinR1 >> 16;
 				z = y * sinR1 + z * cosR1 >> 16;
 				y = tmp;
@@ -181,10 +188,7 @@ class Model extends Renderable
 
 			if (xzRotation != 0)
 			{
-				int sinY = Model_sine[xzRotation];
-				int cosY = Model_cosine[xzRotation];
-				int tmp;
-				tmp = z * sinY + x * cosY >> 16;
+				tmp  = z * sinY + x * cosY >> 16;
 				z = z * cosY - x * sinY >> 16;
 				x = tmp;
 			}
@@ -192,11 +196,11 @@ class Model extends Renderable
 			x += xOffset;
 			y += yOffset;
 			z += zOffset;
-			int tmp = y * cosX - z * sinX >> 16;
+			tmp = y * cosX - z * sinX >> 16;
 			z = y * sinX + z * cosX >> 16;
 			modelViewportZs[i] = z - zRelatedVariable;
-			modelViewportYs[i] = x * graphics.Rasterizer3D_zoom / z + graphics.centerX;
-			modelViewportXs[i] = tmp * graphics.Rasterizer3D_zoom / z + graphics.centerY;
+			modelViewportYs[i] = x * graphics.Rasterizer3D_zoom / z + centerX;
+			modelViewportXs[i] = tmp * graphics.Rasterizer3D_zoom / z + centerY;
 			if (faceTextures != null)
 			{
 				modelLocalX[i] = x;
@@ -210,239 +214,226 @@ class Model extends Renderable
 
 	private void draw(Graphics3D graphics)
 	{
-		if (this.diameter < 6000)
+		if (this.diameter < 1600)
 		{
 			for (int var5 = 0; var5 < this.diameter; ++var5)
 			{
 				distanceFaceCount[var5] = 0;
 			}
 
-			int var7;
-			int var9;
-			int var10;
-			int var11;
-			int var12;
-			int var13;
-			int var14;
+			int i;
+			int idx1;
+			int idx2;
+			int idx3;
+			int viewport1;
+			int viewport2;
+			int viewport3;
+
+			int j;
 			int var15;
-			int var17;
-			int var27;
+			int l;
 
-			int var26;
-			for (var26 = 0; var26 < this.indicesCount; ++var26)
+			for (i = 0; i < this.indicesCount; ++i)
 			{
-				if (this.faceColors3[var26] != -2)
+				if (this.faceColors3[i] != -2)
 				{
-					var7 = this.indices1[var26];
-					var27 = this.indices2[var26];
-					var9 = this.indices3[var26];
-					var10 = modelViewportYs[var7];
-					var11 = modelViewportYs[var27];
-					var12 = modelViewportYs[var9];
+					idx1 = this.indices1[i];
+					idx2 = this.indices2[i];
+					idx3 = this.indices3[i];
 
-					if ((var10 - var11) * (modelViewportXs[var9] - modelViewportXs[var27]) - (var12 - var11) * (modelViewportXs[var7] - modelViewportXs[var27]) > 0)
+					viewport1 = modelViewportYs[idx1];
+					viewport2 = modelViewportYs[idx2];
+					viewport3 = modelViewportYs[idx3];
+
+					int n;
+					if ((viewport1 - viewport2) * (modelViewportXs[idx3] - modelViewportXs[idx2]) - (viewport3 - viewport2) * (modelViewportXs[idx1] - modelViewportXs[idx2]) > 0)
 					{
-						if (var10 >= 0 && var11 >= 0 && var12 >= 0 && var10 <= graphics.rasterClipX && var11 <= graphics.rasterClipX && var12 <= graphics.rasterClipX)
+						if (viewport1 >= 0 && viewport2 >= 0 && viewport3 >= 0 && viewport1 <= graphics.rasterClipX && viewport2 <= graphics.rasterClipX && viewport3 <= graphics.rasterClipX)
 						{
-							faceClipped[var26] = false;
+							faceClipped[i] = false;
 						}
 						else
 						{
-							faceClipped[var26] = true;
+							faceClipped[i] = true;
 						}
 
-						var13 = (modelViewportZs[var7] + modelViewportZs[var27] + modelViewportZs[var9]) / 3 + this.radius;
-						facesByDistance[var13][distanceFaceCount[var13]++] = var26;
+						n = (modelViewportZs[idx1] + modelViewportZs[idx2] + modelViewportZs[idx3]) / 3 + this.radius;
+						facesByDistance[n][distanceFaceCount[n]++] = i;
 					}
 				}
 			}
 
-			int[] var8;
-			if (this.facePriorities == null)
-			{
-				for (var26 = this.diameter - 1; var26 >= 0; --var26)
-				{
-					var7 = distanceFaceCount[var26];
-					if (var7 > 0)
-					{
-						var8 = facesByDistance[var26];
+			int[] faces;
+			if (this.facePriorities == null) {
+				for (i = this.diameter - 1; i >= 0; --i) {
+					idx1 = distanceFaceCount[i];
+					if (idx1 > 0)  {
+						faces = facesByDistance[i];
 
-						for (var9 = 0; var9 < var7; ++var9)
-						{
-							this.rasterFace(graphics, var8[var9]);
+						for (idx3 = 0; idx3 < idx1; ++idx3) {
+							this.rasterFace(graphics, faces[idx3]);
 						}
 					}
 				}
 
-			}
-			else
-			{
-				for (var26 = 0; var26 < 12; ++var26)
-				{
-					numOfPriority[var26] = 0;
-					lt10[var26] = 0;
+			} else  {
+				for (i = 0; i < 12; ++i)  {
+					numOfPriority[i] = 0;
+					lt10[i] = 0;
 				}
 
-				for (var26 = this.diameter - 1; var26 >= 0; --var26)
-				{
-					var7 = distanceFaceCount[var26];
-					if (var7 > 0)
-					{
-						var8 = facesByDistance[var26];
+				for (i = this.diameter - 1; i >= 0; --i)  {
+					idx1 = distanceFaceCount[i];
+					if (idx1 > 0)  {
+						faces = facesByDistance[i];
 
-						for (var9 = 0; var9 < var7; ++var9)
-						{
-							var10 = var8[var9];
-							byte var31 = this.facePriorities[var10];
-							var12 = numOfPriority[var31]++;
-							orderedFaces[var31][var12] = var10;
-							if (var31 < 10)
-							{
-								lt10[var31] += var26;
-							}
-							else if (var31 == 10)
-							{
-								eq10[var12] = var26;
-							}
-							else
-							{
-								eq11[var12] = var26;
+						for (idx3 = 0; idx3 < idx1; ++idx3)  {
+							viewport1 = faces[idx3];
+							byte priority = this.facePriorities[viewport1];
+							viewport3 = numOfPriority[priority]++;
+							orderedFaces[priority][viewport3] = viewport1;
+							if (priority < 10)  {
+								lt10[priority] += i;
+							} else if (priority == 10)  {
+								eq10[viewport3] = i;
+							} else {
+								eq11[viewport3] = i;
 							}
 						}
 					}
 				}
 
-				var26 = 0;
+				i = 0;
 				if (numOfPriority[1] > 0 || numOfPriority[2] > 0)
 				{
-					var26 = (lt10[1] + lt10[2]) / (numOfPriority[1] + numOfPriority[2]);
+					i = (lt10[1] + lt10[2]) / (numOfPriority[1] + numOfPriority[2]);
 				}
 
-				var7 = 0;
+				idx1 = 0;
 				if (numOfPriority[3] > 0 || numOfPriority[4] > 0)
 				{
-					var7 = (lt10[3] + lt10[4]) / (numOfPriority[3] + numOfPriority[4]);
+					idx1 = (lt10[3] + lt10[4]) / (numOfPriority[3] + numOfPriority[4]);
 				}
 
-				var27 = 0;
+				idx2 = 0;
 				if (numOfPriority[6] > 0 || numOfPriority[8] > 0)
 				{
-					var27 = (lt10[8] + lt10[6]) / (numOfPriority[8] + numOfPriority[6]);
+					idx2 = (lt10[8] + lt10[6]) / (numOfPriority[8] + numOfPriority[6]);
 				}
 
-				var10 = 0;
-				var11 = numOfPriority[10];
-				int[] var28 = orderedFaces[10];
-				int[] var29 = eq10;
-				if (var10 == var11)
+				viewport1 = 0;
+				viewport2 = numOfPriority[10];
+				int[] ordFaces = orderedFaces[10];
+				int[] eq = eq10;
+				if (viewport1 == viewport2)
 				{
-					var10 = 0;
-					var11 = numOfPriority[11];
-					var28 = orderedFaces[11];
-					var29 = eq11;
+					viewport1 = 0;
+					viewport2 = numOfPriority[11];
+					ordFaces = orderedFaces[11];
+					eq = eq11;
 				}
 
-				if (var10 < var11)
+				if (viewport1 < viewport2)
 				{
-					var9 = var29[var10];
+					idx3 = eq[viewport1];
 				}
 				else
 				{
-					var9 = -1000;
+					idx3 = -1000;
 				}
 
-				for (var14 = 0; var14 < 10; ++var14)
+				for (j = 0; j < 10; ++j)
 				{
-					while (var14 == 0 && var9 > var26)
+					while (j == 0 && idx3 > i)
 					{
-						this.rasterFace(graphics, var28[var10++]);
-						if (var10 == var11 && var28 != orderedFaces[11])
+						this.rasterFace(graphics, ordFaces[viewport1++]);
+						if (viewport1 == viewport2 && ordFaces != orderedFaces[11])
 						{
-							var10 = 0;
-							var11 = numOfPriority[11];
-							var28 = orderedFaces[11];
-							var29 = eq11;
+							viewport1 = 0;
+							viewport2 = numOfPriority[11];
+							ordFaces = orderedFaces[11];
+							eq = eq11;
 						}
 
-						if (var10 < var11)
+						if (viewport1 < viewport2)
 						{
-							var9 = var29[var10];
+							idx3 = eq[viewport1];
 						}
 						else
 						{
-							var9 = -1000;
+							idx3 = -1000;
 						}
 					}
 
-					while (var14 == 3 && var9 > var7)
+					while (j == 3 && idx3 > idx1)
 					{
-						this.rasterFace(graphics, var28[var10++]);
-						if (var10 == var11 && var28 != orderedFaces[11])
+						this.rasterFace(graphics, ordFaces[viewport1++]);
+						if (viewport1 == viewport2 && ordFaces != orderedFaces[11])
 						{
-							var10 = 0;
-							var11 = numOfPriority[11];
-							var28 = orderedFaces[11];
-							var29 = eq11;
+							viewport1 = 0;
+							viewport2 = numOfPriority[11];
+							ordFaces = orderedFaces[11];
+							eq = eq11;
 						}
 
-						if (var10 < var11)
+						if (viewport1 < viewport2)
 						{
-							var9 = var29[var10];
+							idx3 = eq[viewport1];
 						}
 						else
 						{
-							var9 = -1000;
+							idx3 = -1000;
 						}
 					}
 
-					while (var14 == 5 && var9 > var27)
+					while (j == 5 && idx3 > idx2)
 					{
-						this.rasterFace(graphics, var28[var10++]);
-						if (var10 == var11 && var28 != orderedFaces[11])
+						this.rasterFace(graphics, ordFaces[viewport1++]);
+						if (viewport1 == viewport2 && ordFaces != orderedFaces[11])
 						{
-							var10 = 0;
-							var11 = numOfPriority[11];
-							var28 = orderedFaces[11];
-							var29 = eq11;
+							viewport1 = 0;
+							viewport2 = numOfPriority[11];
+							ordFaces = orderedFaces[11];
+							eq = eq11;
 						}
 
-						if (var10 < var11)
+						if (viewport1 < viewport2)
 						{
-							var9 = var29[var10];
+							idx3 = eq[viewport1];
 						}
 						else
 						{
-							var9 = -1000;
+							idx3 = -1000;
 						}
 					}
 
-					var15 = numOfPriority[var14];
-					int[] var30 = orderedFaces[var14];
+					var15 = numOfPriority[j];
+					int[] var30 = orderedFaces[j];
 
-					for (var17 = 0; var17 < var15; ++var17)
+					for (l = 0; l < var15; ++l)
 					{
-						this.rasterFace(graphics, var30[var17]);
+						this.rasterFace(graphics, var30[l]);
 					}
 				}
 
-				while (var9 != -1000)
+				while (idx3 != -1000)
 				{
-					this.rasterFace(graphics, var28[var10++]);
-					if (var10 == var11 && var28 != orderedFaces[11])
+					this.rasterFace(graphics, ordFaces[viewport1++]);
+					if (viewport1 == viewport2 && ordFaces != orderedFaces[11])
 					{
-						var10 = 0;
-						var28 = orderedFaces[11];
-						var11 = numOfPriority[11];
-						var29 = eq11;
+						viewport1 = 0;
+						ordFaces = orderedFaces[11];
+						viewport2 = numOfPriority[11];
+						eq = eq11;
 					}
 
-					if (var10 < var11)
+					if (viewport1 < viewport2)
 					{
-						var9 = var29[var10];
+						idx3 = eq[viewport1];
 					}
 					else
 					{
-						var9 = -1000;
+						idx3 = -1000;
 					}
 				}
 
@@ -452,55 +443,53 @@ class Model extends Renderable
 
 	private void rasterFace(Graphics3D graphics, int face)
 	{
-		int var2 = this.indices1[face];
-		int var3 = this.indices2[face];
-		int var4 = this.indices3[face];
+		int idx1 = this.indices1[face];
+		int idx2 = this.indices2[face];
+		int idx3 = this.indices3[face];
 		graphics.rasterClipEnable = faceClipped[face];
-		if (this.faceTransparencies == null)
-		{
+
+		if (this.faceTransparencies == null) {
 			graphics.rasterAlpha = 0;
-		}
-		else
-		{
+		} else {
 			graphics.rasterAlpha = this.faceTransparencies[face] & 255;
 		}
 
 		if (this.faceTextures != null && this.faceTextures[face] != -1)
 		{
-			int var5;
-			int var6;
-			int var7;
+			int a;
+			int b;
+			int c;
 			if (this.textureCoords != null && this.textureCoords[face] != -1)
 			{
-				int var8 = this.textureCoords[face] & 255;
-				var5 = this.texIndices1[var8];
-				var6 = this.texIndices2[var8];
-				var7 = this.texIndices3[var8];
+				int i = this.textureCoords[face] & 255;
+				a = this.texIndices1[i];
+				b = this.texIndices2[i];
+				c = this.texIndices3[i];
 			}
 			else
 			{
-				var5 = var2;
-				var6 = var3;
-				var7 = var4;
+				a = idx1;
+				b = idx2;
+				c = idx3;
 			}
 
 			if (this.faceColors3[face] == -1)
 			{
-				graphics.rasterTextureAffine(modelViewportXs[var2], modelViewportXs[var3], modelViewportXs[var4], modelViewportYs[var2], modelViewportYs[var3], modelViewportYs[var4], this.faceColors1[face], this.faceColors1[face], this.faceColors1[face], modelLocalX[var5], modelLocalX[var6], modelLocalX[var7], modelLocalY[var5], modelLocalY[var6], modelLocalY[var7], modelLocalZ[var5], modelLocalZ[var6], modelLocalZ[var7], this.faceTextures[face]);
+				graphics.rasterTextureAffine(modelViewportXs[idx1], modelViewportXs[idx2], modelViewportXs[idx3], modelViewportYs[idx1], modelViewportYs[idx2], modelViewportYs[idx3], this.faceColors1[face], this.faceColors1[face], this.faceColors1[face], modelLocalX[a], modelLocalX[b], modelLocalX[c], modelLocalY[a], modelLocalY[b], modelLocalY[c], modelLocalZ[a], modelLocalZ[b], modelLocalZ[c], this.faceTextures[face]);
 			}
 			else
 			{
-				graphics.rasterTextureAffine(modelViewportXs[var2], modelViewportXs[var3], modelViewportXs[var4], modelViewportYs[var2], modelViewportYs[var3], modelViewportYs[var4], this.faceColors1[face], this.faceColors2[face], this.faceColors3[face], modelLocalX[var5], modelLocalX[var6], modelLocalX[var7], modelLocalY[var5], modelLocalY[var6], modelLocalY[var7], modelLocalZ[var5], modelLocalZ[var6], modelLocalZ[var7], this.faceTextures[face]);
+				graphics.rasterTextureAffine(modelViewportXs[idx1], modelViewportXs[idx2], modelViewportXs[idx3], modelViewportYs[idx1], modelViewportYs[idx2], modelViewportYs[idx3], this.faceColors1[face], this.faceColors2[face], this.faceColors3[face], modelLocalX[a], modelLocalX[b], modelLocalX[c], modelLocalY[a], modelLocalY[b], modelLocalY[c], modelLocalZ[a], modelLocalZ[b], modelLocalZ[c], this.faceTextures[face]);
 			}
 		}
 		else if (this.faceColors3[face] == -1)
 		{
-			int[] field1889 = graphics.colorPalette;
-			graphics.rasterFlat(modelViewportXs[var2], modelViewportXs[var3], modelViewportXs[var4], modelViewportYs[var2], modelViewportYs[var3], modelViewportYs[var4], field1889[this.faceColors1[face]]);
+			int palette = graphics.colorPalette[this.faceColors1[face]];
+			graphics.rasterFlat(modelViewportXs[idx1], modelViewportXs[idx2], modelViewportXs[idx3], modelViewportYs[idx1], modelViewportYs[idx2], modelViewportYs[idx3], palette);
 		}
 		else
 		{
-			graphics.rasterGouraud(modelViewportXs[var2], modelViewportXs[var3], modelViewportXs[var4], modelViewportYs[var2], modelViewportYs[var3], modelViewportYs[var4], this.faceColors1[face], this.faceColors2[face], this.faceColors3[face]);
+			graphics.gouraudTriangle(modelViewportXs[idx1], modelViewportXs[idx2], modelViewportXs[idx3], modelViewportYs[idx1], modelViewportYs[idx2], modelViewportYs[idx3], this.faceColors1[face], this.faceColors2[face], this.faceColors3[face]);
 		}
 	}
 }

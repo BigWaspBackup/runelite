@@ -164,6 +164,8 @@ class DevToolsOverlay extends Overlay
 
 	private void renderTileFlags(WorldView wv, Graphics2D graphics)
 	{
+		Scene scene = wv.getScene();
+		Tile[][][] tiles = scene.getTiles();
 		byte[][][] settings = wv.getTileSettings();
 		int z = wv.getPlane();
 
@@ -171,16 +173,30 @@ class DevToolsOverlay extends Overlay
 		{
 			for (int y = 0; y < Constants.SCENE_SIZE; ++y)
 			{
+				Tile tile = tiles[z][x][y];
+
+				if (tile == null)
+				{
+					continue;
+				}
+
 				boolean isbridge = (settings[1][x][y] & Constants.TILE_FLAG_BRIDGE) != 0;
 				int flag = settings[z][x][y];
+
+				boolean isBlocked = (flag & 0x01) != 0;
 				boolean isvisbelow = (flag & Constants.TILE_FLAG_VIS_BELOW) != 0;
 				boolean hasroof = (flag & Constants.TILE_FLAG_UNDER_ROOF) != 0;
-				if (!isbridge && !isvisbelow && !hasroof)
+				boolean suppressed = (flag & 0x10) != 0;
+				if (!isbridge && !isvisbelow && !hasroof && !isBlocked && !suppressed)
 				{
 					continue;
 				}
 
 				String s = "";
+				if (isBlocked)
+				{
+					s += "L";
+				}
 				if (isbridge)
 				{
 					s += "B";
@@ -193,9 +209,12 @@ class DevToolsOverlay extends Overlay
 				{
 					s += "R";
 				}
+				if (suppressed)
+				{
+					s += "S";
+				}
 
-				LocalPoint lp = new LocalPoint(x << Perspective.LOCAL_COORD_BITS, y << Perspective.LOCAL_COORD_BITS, wv);
-				Point loc = Perspective.getCanvasTextLocation(client, graphics, lp, s, z);
+				Point loc = Perspective.getCanvasTextLocation(client, graphics, tile.getLocalLocation(), s, z);
 				if (loc == null)
 				{
 					continue;
@@ -243,7 +262,7 @@ class DevToolsOverlay extends Overlay
 			}
 
 			String text = composition.getName() + " (ID:" + composition.getId() + ")" +
-				" (A: " + npc.getAnimation() + ") (P: " + npc.getPoseAnimation() + ") (G: " + npc.getGraphic() + ")";
+					" (A: " + npc.getAnimation() + ") (P: " + npc.getPoseAnimation() + ") (G: " + npc.getGraphic() + ")";
 			if (npc.getModelOverrides() != null)
 			{
 				var mo = npc.getModelOverrides();
@@ -333,11 +352,11 @@ class DevToolsOverlay extends Overlay
 			WorldPoint worldLocation = WorldPoint.fromLocalInstance(client, tileLocalLocation);
 			byte flags = client.getTileSettings()[tile.getRenderLevel()][tile.getSceneLocation().getX()][tile.getSceneLocation().getY()];
 			String tooltip = String.format("World location: %d, %d, %d<br>" +
-					"Region ID: %d location: %d, %d<br>" +
-					"Flags: %d",
-				worldLocation.getX(), worldLocation.getY(), worldLocation.getPlane(),
-				worldLocation.getRegionID(), worldLocation.getRegionX(), worldLocation.getRegionY(),
-				flags);
+							"Region ID: %d location: %d, %d<br>" +
+							"Flags: %d",
+					worldLocation.getX(), worldLocation.getY(), worldLocation.getPlane(),
+					worldLocation.getRegionID(), worldLocation.getRegionX(), worldLocation.getRegionY(),
+					flags);
 			toolTipManager.add(new Tooltip(tooltip));
 			OverlayUtil.renderPolygon(graphics, poly, GREEN);
 		}
@@ -473,7 +492,7 @@ class DevToolsOverlay extends Overlay
 
 			String infoString = "(ID: " + graphicsObject.getId() + ")";
 			Point textLocation = Perspective.getCanvasTextLocation(
-				client, graphics, lp, infoString, 0);
+					client, graphics, lp, infoString, 0);
 			if (textLocation != null)
 			{
 				OverlayUtil.renderTextLocation(graphics, textLocation, infoString, Color.WHITE);

@@ -26,9 +26,15 @@ package net.runelite.cache.definitions.exporters;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import net.runelite.cache.definitions.NpcDefinition;
 
 public class NpcExporter
@@ -41,7 +47,7 @@ public class NpcExporter
 		this.npc = npc;
 
 		GsonBuilder builder = new GsonBuilder()
-			.setPrettyPrinting();
+				.setPrettyPrinting();
 		gson = builder.create();
 	}
 
@@ -55,6 +61,44 @@ public class NpcExporter
 		try (FileWriter fw = new FileWriter(file))
 		{
 			fw.write(export());
+		}
+	}
+
+	public String simbaExport(int height, List<Integer> colors)
+	{
+		JsonObject obj = new JsonObject();
+		obj.addProperty("name", npc.name);
+		obj.addProperty("level", npc.combatLevel);
+		obj.addProperty("category", npc.category);
+		obj.addProperty("minimapdot", npc.isMinimapVisible);
+		JsonArray actions = new JsonArray();
+
+		for (int i = 0; i < npc.getOps().getOps().size(); i++) {
+			if (npc.getOps().getOps().get(i) != null) actions.add(npc.getOps().getOps().get(i).text);
+		}
+
+		obj.add("actions", actions);
+
+		JsonArray size = new JsonArray();
+		size.add(npc.size);
+		size.add(npc.size);
+		size.add(height);
+		obj.add("size", size);
+
+		JsonArray jsonColors = new JsonArray();
+		for (Integer color : colors) {
+			jsonColors.add(color);
+		}
+		obj.add("colors", jsonColors);
+
+		return obj.toString();
+	}
+
+	public void simbaExportTo(File file, int height, List<Integer> colors) throws IOException
+	{
+		try (FileWriter fw = new FileWriter(file))
+		{
+			fw.write(simbaExport(height, colors));
 		}
 	}
 }

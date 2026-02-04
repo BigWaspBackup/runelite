@@ -28,6 +28,10 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import javax.inject.Inject;
 import net.runelite.api.Client;
+import net.runelite.api.Player;
+import net.runelite.api.WorldView;
+import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
@@ -59,6 +63,23 @@ public class CameraOverlay extends OverlayPanel
 		int camY = client.getCameraZ();
 		int camZ = client.getCameraY();
 
+		Player player = client.getLocalPlayer();
+		WorldView wv = client.getTopLevelWorldView();
+		if (wv != null) {
+			WorldPoint wPos = player.getWorldLocation();
+			LocalPoint truePos = LocalPoint.fromWorld(wv, wPos);
+			if (truePos != null) {
+
+				int playerX = truePos.getX();
+				int playerY = truePos.getY();
+
+				panelComponent.getChildren().add(LineComponent.builder()
+						.left("Player")
+						.right(playerX + ", " + playerY)
+						.build());
+			}
+		}
+
 		panelComponent.getChildren().add(LineComponent.builder()
 				.left("Camera")
 				.right(camX + ", " + camY + ", " + camZ)
@@ -78,6 +99,22 @@ public class CameraOverlay extends OverlayPanel
 				.left("Scale")
 				.right("" + client.getScale())
 				.build());
+
+		int viewportW = client.getViewportWidth();
+		int viewportH = client.getViewportHeight();
+		int viewportOffsetX = client.getViewportXOffset();
+		int viewportOffsetY = client.getViewportYOffset();
+
+		panelComponent.getChildren().add(LineComponent.builder()
+				.left("Viewport")
+				.right(viewportW + " x " + viewportH)
+				.build());
+
+		panelComponent.getChildren().add(LineComponent.builder()
+				.left("Offset")
+				.right(viewportOffsetX + ", " + viewportOffsetY)
+				.build());
+
 
 		return super.render(graphics);
 	}

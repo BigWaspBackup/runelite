@@ -28,6 +28,7 @@ plugins {
     `maven-publish`
     antlr
     alias(libs.plugins.lombok)
+    application
 }
 
 lombok.version = libs.versions.lombok.get()
@@ -35,6 +36,10 @@ lombok.version = libs.versions.lombok.get()
 java {
     withJavadocJar()
     withSourcesJar()
+}
+
+application {
+    mainClass.set("net.runelite.cache.Cache")
 }
 
 dependencies {
@@ -67,10 +72,53 @@ sourceSets {
     }
 }
 
+val shadowJar = tasks.register<Jar>("shadowJar") {
+    description = "Create a combined JAR with all dependencies"
+    group = BasePlugin.BUILD_GROUP
+
+    // Ensure ANTLR runs before we try to pack the JAR
+    dependsOn(tasks.generateGrammarSource)
+    dependsOn(configurations.runtimeClasspath)
+
+    manifest {
+        attributes["Main-Class"] = "net.runelite.cache.Cache"
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    // 1. Include the project's compiled classes
+    from(sourceSets.main.get().output)
+
+    // 2. Include all dependencies, extracting them from their JARs
+    from(configurations.runtimeClasspath.map { it.map { file ->
+        if (file.isDirectory) file else zipTree(file)
+    } })
+
+    // 3. Exclude signature files and ANTLR metadata to avoid bloat/errors
+    exclude(
+        "META-INF/INDEX.LIST",
+        "META-INF/*.SF",
+        "META-INF/*.DSA",
+        "META-INF/*.RSA",
+        "**/module-info.class",
+        "**/*.tokens",
+        "**/*.interp"
+    )
+
+    archiveClassifier = "shadow"
+    archiveFileName = "${project.name}-${project.version}-shaded.jar"
+}
+
+// Hook it into the standard 'assemble' lifecycle
+tasks.assemble { dependsOn(shadowJar) }
+
 publishing {
     publications {
         create<MavenPublication>("cache") {
             from(components["java"])
+            artifact(shadowJar) {
+                classifier = "shaded"
+            }
         }
     }
 }
@@ -112,4 +160,21 @@ afterEvaluate {
         // and gradle complains if you don't provide an explicit task dependency between the two
         dependsOn(tasks.generateGrammarSource)
     }
+}
+
+tasks.register<Jar>("fatJar") {
+    group = "build"
+    description = "Assembles a fat JAR containing all dependencies"
+
+    archiveBaseName.set("cache")
+    archiveClassifier.set("")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from(sourceSets.main.get().output)
+
+    from({
+        configurations.runtimeClasspath.get().map {
+            if (it.isDirectory) it else zipTree(it)
+        }
+    })
 }

@@ -32,6 +32,7 @@ import net.runelite.cache.definitions.providers.ItemProvider;
 import net.runelite.cache.definitions.providers.ModelProvider;
 import net.runelite.cache.definitions.providers.SpriteProvider;
 import net.runelite.cache.definitions.providers.TextureProvider;
+import net.runelite.cache.models.CircularAngle;
 import net.runelite.cache.models.FaceNormal;
 import net.runelite.cache.models.JagexColor;
 import net.runelite.cache.models.VertexNormal;
@@ -111,9 +112,9 @@ public class ItemSpriteFactory
 		RSTextureProvider rsTextureProvider = new RSTextureProvider(textureProvider, spriteProvider);
 		rsTextureProvider.brightness = JagexColor.BRIGHTNESS_MAX;
 
-		SpritePixels spritePixels = new SpritePixels(36, 32);
 		Graphics3D graphics = new Graphics3D(rsTextureProvider);
 		graphics.setBrightness(JagexColor.BRIGHTNESS_MAX);
+		SpritePixels spritePixels = new SpritePixels(36, 32);
 		graphics.setRasterBuffer(spritePixels.pixels, 36, 32);
 		graphics.reset();
 		graphics.setRasterClipping();
@@ -121,7 +122,8 @@ public class ItemSpriteFactory
 		graphics.rasterGouraudLowRes = false;
 		if (item.placeholderTemplateId != -1)
 		{
-			auxSpritePixels.drawAtOn(graphics, 0, 0);
+            assert auxSpritePixels != null;
+            auxSpritePixels.drawAtOn(graphics, 0, 0);
 		}
 
 		int zoom2d = item.zoom2d;
@@ -134,8 +136,8 @@ public class ItemSpriteFactory
 			zoom2d = (int) ((double) zoom2d * 1.04D);
 		}
 
-		int var17 = zoom2d * Graphics3D.SINE[item.xan2d] >> 16;
-		int var18 = zoom2d * Graphics3D.COSINE[item.xan2d] >> 16;
+		int var17 = zoom2d * CircularAngle.SINE[item.xan2d] >> 16;
+		int var18 = zoom2d * CircularAngle.COSINE[item.xan2d] >> 16;
 
 		itemModel.calculateBoundsCylinder();
 		itemModel.projectAndDraw(graphics, 0,
@@ -147,7 +149,8 @@ public class ItemSpriteFactory
 			var18 + item.yOffset2d);
 		if (item.boughtTemplateId != -1)
 		{
-			auxSpritePixels.drawAtOn(graphics, 0, 0);
+            assert auxSpritePixels != null;
+            auxSpritePixels.drawAtOn(graphics, 0, 0);
 		}
 
 		if (border >= 1)
@@ -168,7 +171,8 @@ public class ItemSpriteFactory
 		graphics.setRasterBuffer(spritePixels.pixels, 36, 32);
 		if (item.notedTemplate != -1)
 		{
-			auxSpritePixels.drawAtOn(graphics, 0, 0);
+            assert auxSpritePixels != null;
+            auxSpritePixels.drawAtOn(graphics, 0, 0);
 		}
 
 		graphics.setRasterBuffer(graphics.graphicsPixels,
@@ -217,8 +221,8 @@ public class ItemSpriteFactory
 	private static Model light(ModelDefinition def, int ambient, int contrast, int x, int y, int z)
 	{
 		def.computeNormals();
-		int somethingMagnitude = (int) Math.sqrt((double) (z * z + x * x + y * y));
-		int var7 = somethingMagnitude * contrast >> 8;
+		int lightMagnitude = (int) Math.sqrt(z * z + x * x + y * y);
+		int attenuation = lightMagnitude * contrast >> 8;
 		Model litModel = new Model();
 		litModel.faceColors1 = new int[def.faceCount];
 		litModel.faceColors2 = new int[def.faceCount];
@@ -227,98 +231,65 @@ public class ItemSpriteFactory
 		{
 			int[] var9 = new int[def.numTextureFaces];
 
-			int var10;
-			for (var10 = 0; var10 < def.faceCount; ++var10)
+			int idx;
+			for (idx = 0; idx < def.faceCount; ++idx)
 			{
-				if (def.textureCoords[var10] != -1)
+				if (def.textureCoords[idx] != -1)
 				{
-					++var9[def.textureCoords[var10] & 255];
+					var9[def.textureCoords[idx] & 0xFF]++;
 				}
 			}
 
 			litModel.numTextureFaces = 0;
 
-			for (var10 = 0; var10 < def.numTextureFaces; ++var10)
+			for (idx = 0; idx < def.numTextureFaces; ++idx)
 			{
-				if (var9[var10] > 0 && def.textureRenderTypes[var10] == 0)
+				if (var9[idx] > 0 && def.textureRenderTypes[idx] == 0)
 				{
-					++litModel.numTextureFaces;
+					litModel.numTextureFaces++;
 				}
 			}
 
 			litModel.texIndices1 = new int[litModel.numTextureFaces];
 			litModel.texIndices2 = new int[litModel.numTextureFaces];
 			litModel.texIndices3 = new int[litModel.numTextureFaces];
-			var10 = 0;
-
+			idx = 0;
 
 			for (int i = 0; i < def.numTextureFaces; ++i)
 			{
 				if (var9[i] > 0 && def.textureRenderTypes[i] == 0)
 				{
-					litModel.texIndices1[var10] = def.texIndices1[i] & '\uffff';
-					litModel.texIndices2[var10] = def.texIndices2[i] & '\uffff';
-					litModel.texIndices3[var10] = def.texIndices3[i] & '\uffff';
-					var9[i] = var10++;
+					litModel.texIndices1[idx] = def.texIndices1[i] & 0xFFFF;
+					litModel.texIndices2[idx] = def.texIndices2[i] & 0xFFFF;
+					litModel.texIndices3[idx] = def.texIndices3[i] & 0xFFFF;
+					var9[i] = idx++;
+					continue;
 				}
-				else
-				{
-					var9[i] = -1;
-				}
+				var9[i] = -1;
 			}
 
 			litModel.textureCoords = new byte[def.faceCount];
-
 			for (int i = 0; i < def.faceCount; ++i)
 			{
-				if (def.textureCoords[i] != -1)
-				{
-					litModel.textureCoords[i] = (byte) var9[def.textureCoords[i] & 255];
-				}
-				else
+				if (def.textureCoords[i] == -1)
 				{
 					litModel.textureCoords[i] = -1;
+					continue;
 				}
+				litModel.textureCoords[i] = (byte) var9[def.textureCoords[i] & 0xFF];
 			}
 		}
 
 		for (int faceIdx = 0; faceIdx < def.faceCount; ++faceIdx)
 		{
-			byte faceType;
-			if (def.faceRenderTypes == null)
-			{
-				faceType = 0;
-			}
-			else
-			{
-				faceType = def.faceRenderTypes[faceIdx];
-			}
-
-			byte faceAlpha;
-			if (def.faceTransparencies == null)
-			{
-				faceAlpha = 0;
-			}
-			else
-			{
-				faceAlpha = def.faceTransparencies[faceIdx];
-			}
-
-			short faceTexture;
-			if (def.faceTextures == null)
-			{
-				faceTexture = -1;
-			}
-			else
-			{
-				faceTexture = def.faceTextures[faceIdx];
-			}
+			byte faceType = def.faceRenderTypes == null ? 0 : def.faceRenderTypes[faceIdx];
+			byte faceAlpha = def.faceTransparencies == null ? 0 : def.faceTransparencies[faceIdx];
+			short faceTexture = def.faceTextures == null ? -1 : def.faceTextures[faceIdx];
 
 			if (faceAlpha == -2)
 			{
 				faceType = 3;
 			}
-
 			if (faceAlpha == -1)
 			{
 				faceType = 2;
@@ -329,40 +300,37 @@ public class ItemSpriteFactory
 			FaceNormal faceNormal;
 			if (faceTexture == -1)
 			{
-				if (faceType != 0)
-				{
-					if (faceType == 1)
-					{
-						faceNormal = def.faceNormals[faceIdx];
-						tmp = (y * faceNormal.y + z * faceNormal.z + x * faceNormal.x) / (var7 / 2 + var7) + ambient;
-						litModel.faceColors1[faceIdx] = method2608(def.faceColors[faceIdx] & '\uffff', tmp);
-						litModel.faceColors3[faceIdx] = -1;
-					}
-					else if (faceType == 3)
-					{
-						litModel.faceColors1[faceIdx] = 128;
-						litModel.faceColors3[faceIdx] = -1;
-					}
-					else
-					{
-						litModel.faceColors3[faceIdx] = -2;
-					}
-				}
-				else
-				{
-					int var15 = def.faceColors[faceIdx] & '\uffff';
+				if (faceType == 0) {
+					int var15 = def.faceColors[faceIdx] & 0xFFFF;
+
 					vertexNormal = def.vertexNormals[def.faceIndices1[faceIdx]];
 
-					tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (var7 * vertexNormal.magnitude) + ambient;
+					tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (attenuation * vertexNormal.magnitude) + ambient;
 					litModel.faceColors1[faceIdx] = method2608(var15, tmp);
 					vertexNormal = def.vertexNormals[def.faceIndices2[faceIdx]];
 
-					tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (var7 * vertexNormal.magnitude) + ambient;
+					tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (attenuation * vertexNormal.magnitude) + ambient;
 					litModel.faceColors2[faceIdx] = method2608(var15, tmp);
 					vertexNormal = def.vertexNormals[def.faceIndices3[faceIdx]];
 
-					tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (var7 * vertexNormal.magnitude) + ambient;
+					tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (attenuation * vertexNormal.magnitude) + ambient;
 					litModel.faceColors3[faceIdx] = method2608(var15, tmp);
+				}
+				else if (faceType == 1)
+				{
+					faceNormal = def.faceNormals[faceIdx];
+					tmp = (y * faceNormal.y + z * faceNormal.z + x * faceNormal.x) / (attenuation / 2 + attenuation) + ambient;
+					litModel.faceColors1[faceIdx] = method2608(def.faceColors[faceIdx] & 0xFFFF, tmp);
+					litModel.faceColors3[faceIdx] = -1;
+				}
+				else if (faceType == 3)
+				{
+					litModel.faceColors1[faceIdx] = 128;
+					litModel.faceColors3[faceIdx] = -1;
+				}
+				else
+				{
+					litModel.faceColors3[faceIdx] = -2;
 				}
 			}
 			else if (faceType != 0)
@@ -370,7 +338,7 @@ public class ItemSpriteFactory
 				if (faceType == 1)
 				{
 					faceNormal = def.faceNormals[faceIdx];
-					tmp = (y * faceNormal.y + z * faceNormal.z + x * faceNormal.x) / (var7 / 2 + var7) + ambient;
+					tmp = (y * faceNormal.y + z * faceNormal.z + x * faceNormal.x) / (attenuation / 2 + attenuation) + ambient;
 					litModel.faceColors1[faceIdx] = bound2to126(tmp);
 					litModel.faceColors3[faceIdx] = -1;
 				}
@@ -383,15 +351,15 @@ public class ItemSpriteFactory
 			{
 				vertexNormal = def.vertexNormals[def.faceIndices1[faceIdx]];
 
-				tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (var7 * vertexNormal.magnitude) + ambient;
+				tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (attenuation * vertexNormal.magnitude) + ambient;
 				litModel.faceColors1[faceIdx] = bound2to126(tmp);
 				vertexNormal = def.vertexNormals[def.faceIndices2[faceIdx]];
 
-				tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (var7 * vertexNormal.magnitude) + ambient;
+				tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (attenuation * vertexNormal.magnitude) + ambient;
 				litModel.faceColors2[faceIdx] = bound2to126(tmp);
 				vertexNormal = def.vertexNormals[def.faceIndices3[faceIdx]];
 
-				tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (var7 * vertexNormal.magnitude) + ambient;
+				tmp = (y * vertexNormal.y + z * vertexNormal.z + x * vertexNormal.x) / (attenuation * vertexNormal.magnitude) + ambient;
 				litModel.faceColors3[faceIdx] = bound2to126(tmp);
 			}
 		}
@@ -412,10 +380,10 @@ public class ItemSpriteFactory
 
 	static int method2608(int var0, int var1)
 	{
-		var1 = ((var0 & 127) * var1) >> 7;
+		var1 = ((var0 & 0x7F) * var1) >> 7;
 		var1 = bound2to126(var1);
 
-		return (var0 & 65408) + var1;
+		return (var0 & 0xFF80) + var1;
 	}
 
 	static int bound2to126(int var0)

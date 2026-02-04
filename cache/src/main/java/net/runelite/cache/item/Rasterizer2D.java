@@ -73,10 +73,9 @@ class Rasterizer2D
 	public void reset()
 	{
 		int var0 = 0;
-
-		int var1;
-		for (var1 = graphicsPixelsWidth * graphicsPixelsHeight - 7; var0 < var1; graphicsPixels[var0++] = 0)
-		{
+		int var1 = graphicsPixelsWidth * graphicsPixelsHeight - 7;
+		while (var0 < var1) {
+			graphicsPixels[var0++] = 0;
 			graphicsPixels[var0++] = 0;
 			graphicsPixels[var0++] = 0;
 			graphicsPixels[var0++] = 0;
@@ -85,12 +84,10 @@ class Rasterizer2D
 			graphicsPixels[var0++] = 0;
 			graphicsPixels[var0++] = 0;
 		}
-
-		for (var1 += 7; var0 < var1; graphicsPixels[var0++] = 0)
-		{
-			;
+		var1 += 7;
+		while (var0 < var1) {
+			graphicsPixels[var0++] = 0;
 		}
-
 	}
 
 }

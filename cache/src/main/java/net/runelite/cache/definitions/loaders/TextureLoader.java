@@ -45,17 +45,17 @@ public class TextureLoader
 		if (rev233)
 		{
 			def.setFileIds(new int[]{
-				is.readUnsignedShort()
+					is.readUnsignedShort()
 			});
 
-			def.missingColor = is.readUnsignedShort();
+			def.averageRGB = is.readUnsignedShort();
 			def.field1778 = is.readUnsignedByte() == 1;
 			def.animationDirection = is.readUnsignedByte();
 			def.animationSpeed = is.readUnsignedByte();
 		}
 		else
 		{
-			def.missingColor = is.readUnsignedShort();
+			def.averageRGB = is.readUnsignedShort();
 			def.field1778 = is.readByte() != 0;
 
 			int count = is.readUnsignedByte();
