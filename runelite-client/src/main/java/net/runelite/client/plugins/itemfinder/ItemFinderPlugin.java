@@ -43,6 +43,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -78,6 +79,7 @@ public class ItemFinderPlugin extends Plugin {
     private boolean seenSprite;
     private int nextIndex;
     private int nullTries;
+    private int loginWaitTicks;
 
     private static class PendingItem {
         final int outId;
@@ -161,7 +163,7 @@ public class ItemFinderPlugin extends Plugin {
             }
 
             if (pending.isEmpty()) {
-                System.out.println("ItemFinder failed: no items from cache");
+                fail("no items from cache");
                 return true;
             }
 
@@ -201,7 +203,7 @@ public class ItemFinderPlugin extends Plugin {
             new Thread(this::filterAndWrite, "ItemFinder-writer").start();
             return true;
         } catch (Exception e) {
-            System.out.println("ItemFinder exception:");
+            fail("exception while dumping sprites: " + e.getMessage());
             log.error("e: ", e);
             return true;
         }
@@ -233,7 +235,7 @@ public class ItemFinderPlugin extends Plugin {
             }
             System.out.println("ItemFinder opaque sprites: " + nonempty + "/" + items.size());
             if (nonempty < MIN_NONEMPTY_SPRITES) {
-                System.out.println("ItemFinder failed: only " + nonempty + "/" + items.size()
+                fail("only " + nonempty + "/" + items.size()
                         + " sprites have pixels (need >= " + MIN_NONEMPTY_SPRITES + ")");
                 return;
             }
@@ -269,10 +271,30 @@ public class ItemFinderPlugin extends Plugin {
 
             System.out.println("ItemFinder zip bytes: " + zipFile.length());
             System.out.println("ItemFinder completed");
+            writeMarker("DONE", "ok");
         } catch (Exception e) {
-            System.out.println("ItemFinder exception:");
+            fail("exception while writing dump: " + e.getMessage());
             log.error("e: ", e);
         }
+    }
+
+    private Path dumpDir() {
+        return Paths.get(System.getProperty("user.dir"), "itemfinder");
+    }
+
+    private void writeMarker(String name, String body) {
+        try {
+            Path dir = dumpDir();
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve(name), body);
+        } catch (IOException e) {
+            log.error("e: ", e);
+        }
+    }
+
+    private void fail(String reason) {
+        System.out.println("ItemFinder failed: " + reason);
+        writeMarker("FAILED", reason);
     }
 
     @Schedule(
@@ -280,9 +302,24 @@ public class ItemFinderPlugin extends Plugin {
             unit = ChronoUnit.SECONDS
     )
     public void Dump() {
-        if (started || client.getGameState() != GameState.LOGIN_SCREEN) {
+        if (started) {
             return;
         }
+
+        GameState state = client.getGameState();
+        if (state != GameState.LOGIN_SCREEN) {
+            loginWaitTicks++;
+            if (loginWaitTicks == 1 || loginWaitTicks % 10 == 0) {
+                System.out.println("ItemFinder waiting for LOGIN_SCREEN, gameState=" + state
+                        + " t=" + (loginWaitTicks * 3) + "s");
+            }
+            if (loginWaitTicks >= 40) {
+                fail("never reached LOGIN_SCREEN, last gameState=" + state);
+                started = true;
+            }
+            return;
+        }
+
         started = true;
         System.out.println("ItemFinder starting...");
         clientThread.invoke(this::loadBatch);
