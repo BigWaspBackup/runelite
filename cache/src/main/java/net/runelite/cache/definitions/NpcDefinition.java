@@ -54,6 +54,7 @@ public class NpcDefinition
 	public int crawlRotateRightAnimation = -1;
 	public short[] recolorToFind;
 	public short[] recolorToReplace;
+	public short fullRecolor = -1;
 	public short[] retextureToFind;
 	public short[] retextureToReplace;
 	public EntityOpsDefinition ops = new EntityOpsDefinition();
